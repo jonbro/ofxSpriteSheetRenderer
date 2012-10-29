@@ -20,7 +20,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  
- ************************************************************************/ 
+ ************************************************************************/
 
 /*
  ofxSpriteSheetRender provides most of the methods you would want for bringing
@@ -35,6 +35,20 @@
 #include "CollageTexture.h"
 #include "PixelTexture.h"
 #include "LinearTexture.h"
+
+typedef struct _vertexStruct
+{
+    GLshort position[4];
+    GLubyte color[4];
+    GLfloat texCoord[2];
+} vertexStruct;
+
+enum {
+    ATTRIB_POSITION,
+    ATTRIB_COLOR,
+    ATTRIB_TEX,
+    NUM_ATTRIBUTES
+};
 
 typedef struct {
 	int index;                    //								integer index into the sprite sheet to draw from. sprite sheet is numbered left to right, top to bottom
@@ -52,13 +66,13 @@ typedef struct {
 	float sprite_x;					// how far offset the display of the sprite should be from the requested display position (how much alpha got trimmed when packing the sprite)
 	float sprite_y;
 	float spritesource_w;			// the size of the sprite before the alpha trimming took place
-	float spritesource_h;			// used for doing rotations around the center of the sprite (maybe, used for nothing for now)		
+	float spritesource_h;			// used for doing rotations around the center of the sprite (maybe, used for nothing for now)
 	
 	unsigned int frame_duration;  //								how many milliseconds each frame should be on screen. less = faster animation.
 	unsigned long next_tick;      // DEFAULT SHOULD BE SET TO 0.	when in gametime the frame should be changed. updated automatically.
 	
 	int loops;                    //								the number of times to loop the animation. -1 means forever, don't set it to 0.
-	int final_index;              //								index of the tile to draw once animation is done. -1 means the default of total_frames-1. 
+	int final_index;              //								index of the tile to draw once animation is done. -1 means the default of total_frames-1.
 	int frame_skip;				 //	 DEFAULT SHOULD BE SET TO 1.	the inverval by which frames are moved between. Generally this should be 1, but could be set to -1 if you wanted the animation to play backwards for example
 } animation_t;
 
@@ -76,7 +90,7 @@ class ofxSpriteSheetRenderer
 public:
 	ofxSpriteSheetRenderer(int _numLayers, int _tilesPerLayer, int _defaultLayer, int _tileSize);
 	~ofxSpriteSheetRenderer();
-	
+	static int polyCount, polyCountFrame;
 	void reAllocateArrays(int _numLayers, int _tilesPerLayer, int _defaultLayer, int _tileSize);
 	
 	void loadTexture(string fileName, int widthHeight, int internalGLScaleMode);
@@ -113,7 +127,7 @@ protected:
 	
 	void allocate(int widthHeight, int internalGLScaleMode);
     void allocate(int width, int height, int internalGLScaleMode);
-
+    
 	void clearTexture();
 	
 	void addMisc(string fileName, int x, int y, int glType=GL_RGBA);
@@ -143,11 +157,9 @@ protected:
 	int sheetSize_y;
     int sheetSize_x;
 	unsigned long gameTime;
-	
-	float * verts;
-	float * coords;
-	unsigned char * colors;
-	
+    
+    vertexStruct * points;
+    
 	int * numSprites;
 	int spriteSheetWidth;
 	int spriteSheetHeight;
@@ -156,6 +168,8 @@ protected:
 	float ur[720];
 	float ll[720];
 	float lr[720];
+    ofRectangle screen;
+    
 };
 
 #endif
