@@ -65,7 +65,8 @@ void PFileImage::loadFromPFS(string textureName)
         FreeImage_CloseMemory(hmem);  
         
         if (bmp == NULL){ printf("couldn't create bmp! \n"); return; }   
-        update();   
+        update();
+        delete myBuf;
     }
 }
 void LinearTexture::loadTexture(string textureName, int glType)
