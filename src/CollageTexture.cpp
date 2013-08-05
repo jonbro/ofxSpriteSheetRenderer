@@ -69,11 +69,6 @@ void CollageTexture::allocate(int w, int h, int internalGlDataType, int internal
 	
 	
 	// MEMO: todo, add more types
-	switch(texData.glTypeInternal) {
-		default:
-			texData.glType		= GL_LUMINANCE;
-			texData.pixelType	= GL_UNSIGNED_BYTE;
-	}
 	
 	// attempt to free the previous bound texture, if we can:
 	clear();
@@ -94,7 +89,7 @@ void CollageTexture::allocate(int w, int h, int internalGlDataType, int internal
 	// internalGlDataType and glDataType (GL_LUMINANCE below)
 	// can be different; on ES they must be exactly the same.
 	//		glTexImage2D(texData.textureTarget, 0, texData.glTypeInternal, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, GL_LUMINANCE, PIXEL_TYPE, 0);  // init to black...
-	glTexImage2D(texData.textureTarget, 0, texData.glTypeInternal, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, texData.glType, texData.pixelType, 0);  // init to black...
+	//glTexImage2D(texData.textureTarget, 0, texData.glTypeInternal, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, texData.glType, texData.pixelType, 0);  // init to black...
 #else
 	glTexImage2D(texData.textureTarget, 0, texData.glTypeInternal, texData.tex_w, texData.tex_h, 0, texData.glTypeInternal, GL_UNSIGNED_BYTE, 0);
 #endif

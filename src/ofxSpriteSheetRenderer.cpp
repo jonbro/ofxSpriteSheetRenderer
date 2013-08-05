@@ -1,18 +1,18 @@
 
 /***********************************************************************
- 
+
  Copyright (C) 2011 by Zach Gage and Ramsey Nasser
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,8 +20,8 @@
  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
- 
- ************************************************************************/ 
+
+ ************************************************************************/
 
 #include "ofxSpriteSheetRenderer.h"
 int ofxSpriteSheetRenderer::polyCount = 0;
@@ -31,17 +31,16 @@ ofxSpriteSheetRenderer::ofxSpriteSheetRenderer(int _numLayers, int _tilesPerLaye
 {
 	texture = NULL;
 	numSprites = NULL;
-    numVertexes = NULL;
 	points = NULL;
-    
+
 	textureIsExternal = false;
-	
+
 	safeMode = true;
-	
+
 	gameTime = ofGetElapsedTimeMillis();
-		
+
 	reAllocateArrays(_numLayers, _tilesPerLayer, _defaultLayer, _tileSize);
-	
+
 	generateRotationArrays();
     screen.set(0, 0, ofGetWidth(), ofGetHeight());
 }
@@ -50,11 +49,9 @@ ofxSpriteSheetRenderer::~ofxSpriteSheetRenderer()
 {
 	if(texture != NULL && textureIsExternal)
 		texture->clear();
-	
+
 	if(numSprites != NULL)
 		delete[] numSprites;
-    if(numVertexes != NULL)
-        delete[] numVertexes;
     if(points != NULL)
         delete[] points;
 }
@@ -65,18 +62,15 @@ void ofxSpriteSheetRenderer::reAllocateArrays(int _numLayers, int _tilesPerLayer
 	tileSize = _tileSize;
 	tilesPerLayer = _tilesPerLayer;
 	defaultLayer = _defaultLayer;
-	
+
 	if(points != NULL)
 		delete[] points;
 	if(numSprites != NULL)
 		delete[] numSprites;
-    if(numVertexes != NULL)
-        delete[] numVertexes;
-	
+
 	numSprites = new int[numLayers];
-	numVertexes = new int[numLayers];
     points = new vertexStruct[numLayers * tilesPerLayer * 6];
-    
+
 	clear();
 	clearTexture();
 }
@@ -101,14 +95,14 @@ void ofxSpriteSheetRenderer::allocate(int width, int height, int internalGLScale
 		tileSize_f = tileSize;
 		tileSize_f /= width;
 		sheetSize = width;
-        
+
 		spriteSheetWidth = width/tileSize;
         spriteSheetHeight = height/tileSize;
-        
+
 		LinearTexture * newTexture = new LinearTexture();
-		
+
 		newTexture->allocate(width, height, GL_RGBA, internalGLScaleMode);
-		
+
 		texture = (ofTexture*) newTexture;
 	}
 	else
@@ -121,13 +115,13 @@ void ofxSpriteSheetRenderer::allocate(int widthHeight, int internalGLScaleMode)
 		tileSize_f = tileSize;
 		tileSize_f /= widthHeight;
 		sheetSize = widthHeight;
-		
+
 		spriteSheetWidth = widthHeight/tileSize;
-		
+
 		CollageTexture * newTexture = new CollageTexture();
-		
+
 		newTexture->allocate(widthHeight, widthHeight, GL_RGBA, internalGLScaleMode);
-		
+
 		texture = (ofTexture*) newTexture;
 	}
 	else
@@ -182,23 +176,19 @@ void ofxSpriteSheetRenderer::loadTexture(LinearTexture * _texture){
 
 void ofxSpriteSheetRenderer::clear(int layer)
 {
-	if(layer==-1){
+	if(layer==-1)
 		for(int i = 0; i < numLayers; i++) numSprites[i] = 0;
-        for(int i = 0; i < numLayers; i++) numVertexes[i] = 0;
-    }
-	else{
+	else
 		numSprites[layer]=0;
-        numVertexes[layer] = 0;
-    }
 }
 
 // nasser added, not trying to match zach's godless coding style
 bool ofxSpriteSheetRenderer::addTile(animation_t* sprite, float x, float y, int layer, flipDirection f, int r, int g, int b, int alpha) {
 	int index, frame;
-	
+
 	if(layer==-1)
 		layer=defaultLayer;
-	
+
 	// animation
 	if(sprite->total_frames > 1)
 		// still animating
@@ -213,7 +203,7 @@ bool ofxSpriteSheetRenderer::addTile(animation_t* sprite, float x, float y, int 
 				// decrement loop count if cycle complete
 				if( ((sprite->frame_skip > 0 && sprite->frame == sprite->total_frames-1) || (sprite->frame_skip < 0 && sprite->frame == 0)) && sprite->loops > 0) sprite->loops--;
 			}
-	
+
 	if(sprite->loops == 0 && sprite->final_index >= 0) {
 		index = sprite->final_index;
 		frame = 0;
@@ -222,17 +212,17 @@ bool ofxSpriteSheetRenderer::addTile(animation_t* sprite, float x, float y, int 
 		frame = sprite->frame;
 	}
 	if(f==F_HORIZ)
-		return addTile(sprite->tex_x, sprite->tex_y, x+sprite->w-sprite->sprite_x-sprite->tex_w, y+sprite->sprite_y, layer, sprite->tex_w, sprite->tex_h, f, r, g, b, alpha);		
+		return addTile(sprite->tex_x, sprite->tex_y, x+sprite->w-sprite->sprite_x-sprite->tex_w, y+sprite->sprite_y, layer, sprite->tex_w, sprite->tex_h, f, r, g, b, alpha);
 	// we are no longer handling the animation system in the tile renderer, so we are going to pass x y coords rather than indexes to the next object
 	return addTile(sprite->tex_x, sprite->tex_y, x+sprite->sprite_x, y+sprite->sprite_y, layer, sprite->tex_w, sprite->tex_h, f, r, g, b, alpha);
 }
 
 bool ofxSpriteSheetRenderer::addCenteredTile(animation_t* sprite, float x, float y, int layer, flipDirection f, float scale, int r, int g, int b, int alpha) {
 	int index, frame;
-	
+
 	if(layer==-1)
 		layer=defaultLayer;
-	
+
 	// animation
 	if(sprite->total_frames > 1)
 		// still animating
@@ -247,7 +237,7 @@ bool ofxSpriteSheetRenderer::addCenteredTile(animation_t* sprite, float x, float
 				// decrement loop count if cycle complete
 				if( ((sprite->frame_skip > 0 && sprite->frame == sprite->total_frames-1) || (sprite->frame_skip < 0 && sprite->frame == 0)) && sprite->loops > 0) sprite->loops--;
 			}
-	
+
 	if(sprite->loops == 0 && sprite->final_index >= 0) {
 		index = sprite->final_index;
 		frame = 0;
@@ -255,7 +245,7 @@ bool ofxSpriteSheetRenderer::addCenteredTile(animation_t* sprite, float x, float
 		index = sprite->index;
 		frame = sprite->frame;
 	}
-	
+
 	return addCenteredTile(index, frame, x, y, layer, sprite->w, sprite->h, f, scale, r, g, b, alpha);
 }
 
@@ -272,10 +262,10 @@ bool ofxSpriteSheetRenderer::addCornerTile(animation_t* sprite, ofPoint p1, ofPo
 	if(layer==-1)
 		layer=defaultLayer;
     /*
-    float alphaMult = alpha/255;
-    r *= alphaMult;
-    g *= alphaMult;
-    b *= alphaMult;
+     float alphaMult = alpha/255;
+     r *= alphaMult;
+     g *= alphaMult;
+     b *= alphaMult;
      */
 	return addCornerTile(sprite->tex_x, sprite->tex_y, p1, p2, p3, p4, layer, f, sprite->tex_w, sprite->tex_h, r, g, b, alpha);
 }
@@ -306,10 +296,11 @@ bool ofxSpriteSheetRenderer::addCenteredTile(int tile_name, int frame, float x, 
 
 	getFrameXandY(tile_name, tex_x, tex_x);
 	tex_x += frame*w*tileSize_f;
-	
+
+    //    addTexCoords(f, tex_x, tex_y, layer, w, h);
     static float tex_h = h;
     static float tex_w = w;
-		
+
 	w*=tileSize*scale;
 	w/=2;
 	h*=tileSize*scale;
@@ -326,17 +317,17 @@ bool ofxSpriteSheetRenderer::addCenteredTile(int tile_name, int frame, float x, 
 
 bool ofxSpriteSheetRenderer::addCenterRotatedTile(float tex_x, float tex_y, float x, float y, int layer, float w, float h, flipDirection f, float scale, int rot, int r, int g, int b, int alpha)
 {
-	
-//    static float tex_h = h;
-//    static float tex_w = w;
-    
-//	tex_x /= spriteSheetWidth;
-//	tex_y /= spriteSheetHeight;
-//	tex_w /= spriteSheetWidth;
-//    tex_h /= spriteSheetHeight;
+
+    //    static float tex_h = h;
+    //    static float tex_w = w;
+
+    //	tex_x /= spriteSheetWidth;
+    //	tex_y /= spriteSheetHeight;
+    //	tex_w /= spriteSheetWidth;
+    //    tex_h /= spriteSheetHeight;
     float sw = w;
     float sh = h;
-    
+
 	int degOff = 0;
 	if (w != h) {
 		degOff = atan2(w/2, h/2)*RAD_TO_DEG-45;
@@ -344,20 +335,20 @@ bool ofxSpriteSheetRenderer::addCenterRotatedTile(float tex_x, float tex_y, floa
 	sw *= scale;
 	sh *= scale;
 	float halfSize = sqrt((sw/2)*(sw/2)+(sh/2)*(sh/2));
-	
-	
+
+
 	sw = halfSize;
 	sh = halfSize;
 
 	rot = rot%360;
 	if (rot<0)
 		rot+=360;
-	
+
 	int ulRot = rot-degOff;
 	int urRot = rot+degOff;
 	int llRot = rot+degOff;
 	int lrRot = rot-degOff;
-	
+
 	// scale to 360
 	ulRot = ulRot%360;
 	if (ulRot<0)
@@ -371,7 +362,7 @@ bool ofxSpriteSheetRenderer::addCenterRotatedTile(float tex_x, float tex_y, floa
 	lrRot = lrRot%360;
 	if (lrRot<0)
 		lrRot+=360;
-	
+
 	rot*=2;
 	ulRot*=2;
 	urRot*=2;
@@ -390,7 +381,7 @@ bool ofxSpriteSheetRenderer::addCenterRotatedTile(float tex_x, float tex_y, floa
     p3.set(x+sw*ll[llRot  ], y+sh*ll[llRot+1]);
     p4.set(x+sw*lr[lrRot  ], y+sh*lr[lrRot+1]);
     color.set(r, g, b, alpha);
-    
+
     return addCornerColorTile(tex_x, tex_y, p1, p2, p3, p4, layer, f, w, h, color, color, color, color);
 
 }
@@ -405,45 +396,45 @@ bool ofxSpriteSheetRenderer::addCornerColorTile(float tex_x, float tex_y,  ofPoi
 	//flipDirection f = F_NONE;
 	if(layer==-1)
 		layer=defaultLayer;
-	
+
 	if(texture == NULL)
 	{
 		cerr << "RENDER ERROR: No texture loaded!"  << endl;
 		return false;
 	}
-	
-	if(numVertexes[layer] >= tilesPerLayer*6)
+
+	if(numSprites[layer] >= tilesPerLayer)
 	{
 		cerr << "RENDER ERROR: Layer " << layer << " over allocated! Max " << tilesPerLayer << " sprites per layer!"  << endl;
 		return false;
 	}
-	
+
 	if(layer > numLayers)
 	{
 		cerr << "RENDER ERROR: Bogus layer '" << layer << "'! Only " << numLayers << " layers compiled!"  << endl;
 		return false;
 	}
-	
+
 	float frameX = tex_x;
 	float frameY = tex_y;
-	int layerOffset = layer*tilesPerLayer*6;
-	int vertexOffset = (layerOffset + numVertexes[layer]);
-	
+	int layerOffset = layer*tilesPerLayer;
+	int vertexOffset = (layerOffset + numSprites[layer])*6;
+
 	frameX /= spriteSheetWidth;
 	frameY /= spriteSheetHeight;
-	
-	addTexCoords(f, frameX, frameY, layer, vertexOffset, w, h);
+
+	addTexCoords(f, frameX, frameY, layer, w, h);
 
     // tl
     // add a degenerate triangle at the beginning, i.e. put in the same point twice
     points[vertexOffset].position[0] = p1.x;
     points[vertexOffset].position[1] = p1.y;
     points[vertexOffset].position[2] = 0;
-    // add a degenerate triangle at the beginning, i.e. put in the same point twice    
+    // add a degenerate triangle at the beginning, i.e. put in the same point twice
     points[vertexOffset+1].position[0] = p1.x;
     points[vertexOffset+1].position[1] = p1.y;
     points[vertexOffset+1].position[2] = 0;
-    
+
     // tr
     points[vertexOffset+2].position[0] = p2.x;
     points[vertexOffset+2].position[1] = p2.y;
@@ -460,19 +451,19 @@ bool ofxSpriteSheetRenderer::addCornerColorTile(float tex_x, float tex_y,  ofPoi
     points[vertexOffset+5].position[0] = p4.x;
     points[vertexOffset+5].position[1] = p4.y;
     points[vertexOffset+5].position[2] = 0;
-    
+
     // do the same thing for the colors
     // tl
     points[vertexOffset].color[0] = c1.r;
     points[vertexOffset].color[1] = c1.g;
     points[vertexOffset].color[2] = c1.b;
     points[vertexOffset].color[3] = c1.a;
-    // add a degenerate triangle at the beginning, i.e. put in the same point twice    
+    // add a degenerate triangle at the beginning, i.e. put in the same point twice
     points[vertexOffset+1].color[0] = c1.r;
     points[vertexOffset+1].color[1] = c1.g;
     points[vertexOffset+1].color[2] = c1.b;
     points[vertexOffset+1].color[3] = c1.a;
-    
+
     // tr
     points[vertexOffset+2].color[0] = c2.r;
     points[vertexOffset+2].color[1] = c2.g;
@@ -488,42 +479,18 @@ bool ofxSpriteSheetRenderer::addCornerColorTile(float tex_x, float tex_y,  ofPoi
     points[vertexOffset+4].color[1] = c4.g;
     points[vertexOffset+4].color[2] = c4.b;
     points[vertexOffset+4].color[3] = c4.a;
-    
+
     // add another degenerate triangle at the end
     points[vertexOffset+5].color[0] = c4.r;
     points[vertexOffset+5].color[1] = c4.g;
     points[vertexOffset+5].color[2] = c4.b;
     points[vertexOffset+5].color[3] = c4.a;
-		
-	//----------------------------------------------
-	
-	numSprites[layer]++;
-	numVertexes[layer] += 6;
-	
-	return true;	
-}
-bool ofxSpriteSheetRenderer::addMesh(ofMesh &mesh){
-    // copy the points from the mesh
-    ofVec3f *verts = mesh.getVerticesPointer();
-    ofVec2f *texCoords = mesh.getTexCoordsPointer();
-    // force to zero layer for now
-	int vertexOffset = (0 + numVertexes[0]);
-    for (int i=0; i<mesh.getNumVertices(); i++) {
-        points[vertexOffset+i].position[0] = verts[i].x;
-        points[vertexOffset+i].position[1] = verts[i].y;
-        points[vertexOffset+i].position[2] = verts[i].z;
-        // just force to white for now
-        points[vertexOffset+i].color[0] = mesh.getColor(i).r*255.0;
-        points[vertexOffset+i].color[1] = mesh.getColor(i).g*255.0;
-        points[vertexOffset+i].color[2] = mesh.getColor(i).b*255.0;
-        points[vertexOffset+i].color[3] = mesh.getColor(i).a*255.0;
-        // and dump in just the top left corner of the sprite
-        points[vertexOffset+i].texCoord[0] = texCoords[i].x/spriteSheetWidth;
-        points[vertexOffset+i].texCoord[1] = texCoords[i].y/spriteSheetHeight;
 
-        numVertexes[0]++;
-    }
-    return true;
+	//----------------------------------------------
+
+	numSprites[layer]++;
+
+	return true;
 }
 
 void ofxSpriteSheetRenderer::update(unsigned long time)
@@ -531,56 +498,41 @@ void ofxSpriteSheetRenderer::update(unsigned long time)
 	gameTime = time;
 }
 
-void ofxSpriteSheetRenderer::draw(ofShader *shader)
+void ofxSpriteSheetRenderer::draw()
 {
-#ifndef TARGET_OF_IPHONE
+    ofEnableNormalizedTexCoords();
 	if(safeMode)
 	{
-        /**/
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        
 	}
-    texture->bind();
-#elif defined TARGET_OF_IPHONE
-    /**/
-    shader->setUniformTexture("Texture", *texture, texture->getTextureData().textureID);
-    glVertexAttribPointer(glGetAttribLocation(shader->getProgram(), "position"), 3, GL_SHORT, GL_FALSE, sizeof(vertexStruct), &points[0].position);  
-    glVertexAttribPointer(glGetAttribLocation(shader->getProgram(), "color"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertexStruct), &points[0].color);
 
-    glVertexAttribPointer(glGetAttribLocation(shader->getProgram(), "TexCoordIn"), 2, GL_FLOAT, GL_TRUE, sizeof(vertexStruct), &points[0].texCoord);
-#endif
+	glVertexPointer(3, GL_SHORT, sizeof(vertexStruct), &points[0].position);
+	glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertexStruct), &points[0].color);
+	glTexCoordPointer(2, GL_FLOAT, sizeof(vertexStruct), &points[0].texCoord);
+	texture->bind();
 	for(int i = 0; i < numLayers; i++){
-		if(numVertexes[i] > 0){
-            /**/
-#ifndef TARGET_OF_IPHONE
-            glVertexPointer(3, GL_SHORT, sizeof(vertexStruct), &points[0].position);
-            glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertexStruct), &points[0].color);
-            glTexCoordPointer(2, GL_FLOAT, sizeof(vertexStruct), &points[0].texCoord);
-#endif
-            //printf("%i numvertexes: %i for layer: %i %i\n", i*tilesPerLayer*6, numVertexes[i], i, GL_TRIANGLE_STRIP);
-			glDrawArrays(GL_TRIANGLE_STRIP, i*tilesPerLayer*6, numVertexes[i]);
+		if(numSprites[i] > 0){
+			glDrawArrays(GL_TRIANGLE_STRIP, i*tilesPerLayer*6, numSprites[i]*6);
         }
     }
-#ifndef TARGET_OF_IPHONE
+	texture->unbind();
 	if(safeMode)
 	{
-     /*
-		glDisable(GL_VERTEX_ARRAY);
-		glDisable(GL_COLOR_ARRAY);
-		glDisable(GL_TEXTURE_COORD_ARRAY);
-       */ 
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	}
-    texture->unbind();
-#endif
 }
 
-void ofxSpriteSheetRenderer::addTexCoords(flipDirection f, float &frameX, float &frameY, int layer, int coordOffset, float w, float h)
+void ofxSpriteSheetRenderer::addTexCoords(flipDirection f, float &frameX, float &frameY, int layer, float w, float h)
 {
+	int layerOffset = layer*tilesPerLayer;
+	int coordOffset = (layerOffset + numSprites[layer])*6;
 	w /= spriteSheetWidth;
 	h /= spriteSheetHeight;
-	
+
 	switch (f) {
 		case F_NONE:
             //tl
@@ -596,36 +548,36 @@ void ofxSpriteSheetRenderer::addTexCoords(flipDirection f, float &frameX, float 
 			//bl
             points[coordOffset+3].texCoord[0] = frameX;
             points[coordOffset+3].texCoord[1] = frameY+h;
-			
+
 			//br
             points[coordOffset+4].texCoord[0] = frameX+w;
             points[coordOffset+4].texCoord[1] = frameY+h;
             points[coordOffset+5].texCoord[0] = frameX+w;
             points[coordOffset+5].texCoord[1] = frameY+h;
-			
+
 			break;
 		case F_HORIZ:
-            
+
             //tl
             points[coordOffset].texCoord[0] = frameX+w;
             points[coordOffset].texCoord[1] = frameY;
             points[coordOffset+1].texCoord[0] = frameX+w;
             points[coordOffset+1].texCoord[1] = frameY;
-            
+
             //tr
             points[coordOffset+2].texCoord[0] = frameX;
             points[coordOffset+2].texCoord[1] = frameY;
-            
+
 			//bl
             points[coordOffset+3].texCoord[0] = frameX+w;
             points[coordOffset+3].texCoord[1] = frameY+h;
-			
+
 			//br
             points[coordOffset+4].texCoord[0] = frameX;
             points[coordOffset+4].texCoord[1] = frameY+h;
             points[coordOffset+5].texCoord[0] = frameX;
             points[coordOffset+5].texCoord[1] = frameY+h;
-			
+
 			break;
 		case F_VERT:
             //tl
@@ -633,21 +585,21 @@ void ofxSpriteSheetRenderer::addTexCoords(flipDirection f, float &frameX, float 
             points[coordOffset].texCoord[1] = frameY+h;
             points[coordOffset+1].texCoord[0] = frameX;
             points[coordOffset+1].texCoord[1] = frameY+h;
-            
+
             //tr
             points[coordOffset+2].texCoord[0] = frameX+w;
             points[coordOffset+2].texCoord[1] = frameY+h;
-            
+
 			//bl
             points[coordOffset+3].texCoord[0] = frameX;
             points[coordOffset+3].texCoord[1] = frameY;
-			
+
 			//br
             points[coordOffset+4].texCoord[0] = frameX+w;
             points[coordOffset+4].texCoord[1] = frameY;
             points[coordOffset+5].texCoord[0] = frameX+w;
             points[coordOffset+5].texCoord[1] = frameY;
-			
+
 			break;
 		case F_HORIZ_VERT:
             //tl
@@ -655,21 +607,21 @@ void ofxSpriteSheetRenderer::addTexCoords(flipDirection f, float &frameX, float 
             points[coordOffset].texCoord[1] = frameY+h;
             points[coordOffset+1].texCoord[0] = frameX+w;
             points[coordOffset+1].texCoord[1] = frameY+h;
-            
+
             //tr
             points[coordOffset+2].texCoord[0] = frameX;
             points[coordOffset+2].texCoord[1] = frameY+h;
-            
+
 			//bl
             points[coordOffset+3].texCoord[0] = frameX+w;
             points[coordOffset+3].texCoord[1] = frameY;
-			
+
 			//br
             points[coordOffset+4].texCoord[0] = frameX;
             points[coordOffset+4].texCoord[1] = frameY;
             points[coordOffset+5].texCoord[0] = frameX;
             points[coordOffset+5].texCoord[1] = frameY;
-			
+
 			break;
 		default:
 			break;
@@ -680,13 +632,13 @@ void ofxSpriteSheetRenderer::getFrameXandY(int tile_position, float &x, float &y
 {
 	y = (tile_position / spriteSheetHeight);
 	x = (tile_position - y * spriteSheetWidth);
-	
+
 	x*=tileSize_f;
 	y*=tileSize_f;
 }
 
 void ofxSpriteSheetRenderer::generateRotationArrays()
-{	
+{
 	// ul
 	int start = 225;
 	for(int i=0;i<360;i++)
@@ -697,7 +649,7 @@ void ofxSpriteSheetRenderer::generateRotationArrays()
 		if(start>=360)
 			start=0;
 	}
-	
+
 	//ur
 	start = 315;
 	for(int i=0;i<360;i++)
@@ -708,7 +660,7 @@ void ofxSpriteSheetRenderer::generateRotationArrays()
 		if(start>=360)
 			start=0;
 	}
-	
+
 	//lr
 	start = 45;
 	for(int i=0;i<360;i++)
@@ -719,7 +671,7 @@ void ofxSpriteSheetRenderer::generateRotationArrays()
 		if(start>=360)
 			start=0;
 	}
-	
+
 	//ll
 	start = 135;
 	for(int i=0;i<360;i++)
